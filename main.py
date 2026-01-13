@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from prompts import system_prompt
+
 parser = argparse.ArgumentParser(description="Chatbot")
 parser.add_argument("user_prompt", type=str, help="User prompt")
 parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
@@ -17,7 +19,14 @@ if api_key is None:
 messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
 client = genai.Client(api_key=api_key)
 
-req = client.models.generate_content(model="gemini-2.5-flash", contents=messages)
+req = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=messages,
+    config=types.GenerateContentConfig(
+        system_instruction=system_prompt,
+        temperature=0,
+    ),
+)
 usage_metadata = req.usage_metadata
 if usage_metadata is None:
     raise RuntimeError("invalid usage metadata")
