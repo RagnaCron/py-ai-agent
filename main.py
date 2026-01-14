@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 
 from prompts import system_prompt
+from functions.call_function import available_functions
 
 parser = argparse.ArgumentParser(description="Chatbot")
 parser.add_argument("user_prompt", type=str, help="User prompt")
@@ -23,6 +24,7 @@ req = client.models.generate_content(
     model="gemini-2.5-flash",
     contents=messages,
     config=types.GenerateContentConfig(
+        tools=[available_functions],
         system_instruction=system_prompt,
         temperature=0,
     ),
@@ -31,8 +33,14 @@ usage_metadata = req.usage_metadata
 if usage_metadata is None:
     raise RuntimeError("invalid usage metadata")
 
+if req.function_calls is not None:
+    for function_call in req.function_calls:
+        print(f"Calling function: {function_call.name}({function_call.args})")
+else:
+    print(f"Response: {req.text}")
+
 if args.verbose:
     print(f"User prompt: {args.user_prompt}")
     print(f"Prompt tokens: {usage_metadata.prompt_token_count}")
     print(f"Response tokens: {usage_metadata.candidates_token_count}")
-print(f"Response: {req.text}")
+
