@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 from prompts import system_prompt
-from functions.call_function import available_functions
+from functions.call_function import available_functions, call_function
 
 parser = argparse.ArgumentParser(description="Chatbot")
 parser.add_argument("user_prompt", type=str, help="User prompt")
@@ -33,9 +33,18 @@ usage_metadata = req.usage_metadata
 if usage_metadata is None:
     raise RuntimeError("invalid usage metadata")
 
+function_results = []
 if req.function_calls is not None:
     for function_call in req.function_calls:
-        print(f"Calling function: {function_call.name}({function_call.args})")
+        function_call_result = call_function(function_call)
+        if function_call_result.parts[0].function_response is None:
+            raise RuntimeError("invalid function call")
+        if function_call_result.parts[0].function_response.response is None:
+            raise RuntimeError("invalid function call")
+        if args.verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+        function_results.extend(function_call_result.parts[0])
+
 else:
     print(f"Response: {req.text}")
 
